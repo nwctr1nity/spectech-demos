@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Select } from './Select'
 import { ZONES, fmt, fmtN, quote, waLink, type Tenant } from './data'
 
 export function Calculator({ t, machineId, onMachine }: { t: Tenant; machineId: string; onMachine: (id: string) => void }) {
@@ -23,11 +24,8 @@ export function Calculator({ t, machineId, onMachine }: { t: Tenant; machineId: 
       </div>
       <div>
         <label htmlFor="c-mach">Техника</label>
-        <select className="field" id="c-mach" value={m.id} onChange={(e) => onMachine(e.target.value)}>
-          {t.machines.map((x) => (
-            <option key={x.id} value={x.id}>{x.name}, {x.spec}</option>
-          ))}
-        </select>
+        <Select id="c-mach" value={m.id} onChange={onMachine}
+          options={t.machines.map((x) => ({ value: x.id, label: x.name, hint: `${x.spec} · от ${fmtN(x.rate)} ₸/ч` }))} />
       </div>
       <div className="row2">
         <div>
@@ -45,11 +43,8 @@ export function Calculator({ t, machineId, onMachine }: { t: Tenant; machineId: 
       </div>
       <div>
         <label htmlFor="c-zone">Куда подать</label>
-        <select className="field" id="c-zone" value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
-          {ZONES.map((x) => (
-            <option key={x.id} value={x.id}>{x.name}</option>
-          ))}
-        </select>
+        <Select id="c-zone" value={zoneId} onChange={setZoneId}
+          options={ZONES.map((x) => ({ value: x.id, label: x.name, hint: x.extra ? `+${fmtN(x.extra)} ₸ за подачу` : 'подача включена' }))} />
       </div>
       <div className="calc-sum">
         <div>
