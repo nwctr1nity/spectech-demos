@@ -1,10 +1,33 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Select } from '../Select'
 import { CarArt } from './Car'
+import { openCookieSettings, readQuote, saveQuote, trackLead } from './consent'
+import { Cookies } from './Cookies'
 import { CARS, COVER, DELIVERY, TENANTS, aed, quote, tenantFromPath, wa, type Car, type Tenant } from './data'
 
 const Arrow = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+)
+
+const I = {
+  star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z',
+  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3.5 2',
+  tag: 'M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9zM8.5 8.5h.01',
+  shield: 'M12 3l7.5 3v5.5c0 4.5-3.2 8-7.5 9.5-4.3-1.5-7.5-5-7.5-9.5V6zM8.8 12l2.2 2.2 4.2-4.4',
+  truck: 'M2.5 6.5h11v9h-11zM13.5 9.5h4l3 3.2v2.8h-7M6.5 18.5a1.8 1.8 0 1 0 0-.01M17 18.5a1.8 1.8 0 1 0 0-.01',
+  doc: 'M6.5 3.5h7l4 4v13h-11zM13.5 3.5v4h4M9 12h6M9 15.5h6',
+  car: 'M4 15.5v-3l2-4.5h12l2 4.5v3M3.5 15.5h17v3h-17zM7 18.5v1.5M17 18.5v1.5M4.5 12.5h15',
+  key: 'M14.5 4a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM10.6 13.4 3.5 20.5M6 18l2 2M8 16l1.5 1.5',
+}
+const Ico = ({ d }: { d: string }) => (
+  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+)
+const Head = ({ pill, title, sub }: { pill: string; title: string; sub?: string }) => (
+  <div className="head">
+    <span className="pill"><i aria-hidden="true" />{pill}</span>
+    <h2>{title}</h2>
+    {sub && <p className="mut">{sub}</p>}
+  </div>
 )
 
 function Index() {
@@ -17,20 +40,21 @@ function Index() {
 }
 
 function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId: string; setCarId: (id: string) => void }) {
-  const [days, setDays] = useState(3)
-  const [del, setDel] = useState(DELIVERY[1].id)
-  const [cov, setCov] = useState(COVER[0].id)
+  const [saved] = useState(readQuote)
+  const [days, setDays] = useState(saved?.days ?? 3)
+  const [del, setDel] = useState(DELIVERY.some((x) => x.id === saved?.del) ? saved!.del : DELIVERY[1].id)
+  const [cov, setCov] = useState(COVER.some((x) => x.id === saved?.cov) ? saved!.cov : COVER[0].id)
   const car = fleet.find((c) => c.id === carId) ?? fleet[0]
   const d = DELIVERY.find((x) => x.id === del)!
   const c = COVER.find((x) => x.id === cov)!
   const q = useMemo(() => quote(car, days, d.fee, c.perDay, t.noDeposit), [car, days, d, c, t.noDeposit])
+  useEffect(() => { saveQuote({ car: car.id, days: q.d, del, cov }) }, [car.id, q.d, del, cov])
   const msg = wa(t.whatsapp,
     `Hello! I'd like to rent ${car.name} for ${q.d} day${q.d > 1 ? 's' : ''}.\n${d.label}, ${c.label}.\nPrice on the website: ${aed(q.total)}.`)
 
   return (
-    <section className="book" id="book" aria-label="Booking">
+    <div className="book" id="book">
       <div className="book-form">
-        <h2>Get your price</h2>
         <div className="fld">
           <label htmlFor="b-car">Car</label>
           <Select id="b-car" value={car.id} onChange={setCarId}
@@ -63,7 +87,7 @@ function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId
         </div>
       </div>
       <div className="book-sum">
-        <CarArt car={car} className="sum-car" />
+        <div className="pic sum-pic"><CarArt car={car} /></div>
         <p className="mut">{car.cls} · {car.seats} seats · automatic</p>
         <h3>{car.name}</h3>
         <dl>
@@ -73,16 +97,17 @@ function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId
           <div><dt>Security deposit, refundable</dt><dd>{q.deposit ? aed(q.deposit) : 'No deposit'}</dd></div>
         </dl>
         <div className="total" aria-live="polite"><span>Total</span><b>{aed(q.total)}</b></div>
-        <a className="btn btn-light" href={msg} target="_blank" rel="noopener">Book on WhatsApp <Arrow /></a>
+        <a className="btn btn-light" href={msg} target="_blank" rel="noopener" onClick={() => trackLead(car.name, q.total)}>Book on WhatsApp <Arrow /></a>
       </div>
-    </section>
+    </div>
   )
 }
 
 export default function App() {
   const t = tenantFromPath(location.pathname)
   const fleet = useMemo(() => (t ? t.fleet.map((id) => CARS.find((c) => c.id === id)!) : []), [t])
-  const [carId, setCarId] = useState(fleet[0]?.id ?? '')
+  const [carId, setCarId] = useState(() => { const id = readQuote()?.car; return fleet.some((c) => c.id === id) ? id! : fleet[0]?.id ?? '' })
+  const trackers = useMemo(() => ({ ga4: t?.ga4, pixel: t?.pixel }), [t])
   useEffect(() => { if (t) document.title = `${t.name}: car rental in ${t.area}, Dubai` }, [t])
   if (!t) return <Index />
 
@@ -111,7 +136,7 @@ export default function App() {
           <p className="eyebrow">{t.area} · Dubai · {t.hours}</p>
           <h1>{t.headline}</h1>
           <p className="lead">{t.lead}</p>
-          <a className="connect" href={hello} target="_blank" rel="noopener">Let’s connect <Arrow /></a>
+          <a className="connect" href={hello} target="_blank" rel="noopener" onClick={() => trackLead('hero')}>Let’s connect <Arrow /></a>
           <div className="stage" aria-hidden="true">
             <CarArt car={hero} className="hero-car" hero />
           </div>
@@ -120,20 +145,23 @@ export default function App() {
 
       <main className="wrap">
         <ul className="facts">
-          <li><b>{t.rating.value} ★</b><span>{t.rating.count} Google reviews</span></li>
-          <li><b>{t.hours.replace('Open ', '')}</b><span>{t.hours.startsWith('Open') ? 'bookings any time' : 'every day'}</span></li>
-          <li><b>{aed(from)}</b><span>per day, from</span></li>
-          <li><b>{t.noDeposit ? 'No deposit' : 'Delivery'}</b><span>{t.noDeposit ? 'nothing frozen on your card' : 'to your hotel or home'}</span></li>
+          <li><span className="ico"><Ico d={I.star} /></span><div><b>{t.rating.value} on Google</b><span>{t.rating.count} reviews</span></div></li>
+          <li><span className="ico"><Ico d={I.clock} /></span><div><b>{t.hours.replace('Open ', '')}</b><span>{t.hours.startsWith('Open') ? 'bookings any time' : 'every day'}</span></div></li>
+          <li><span className="ico"><Ico d={I.tag} /></span><div><b>From {aed(from)}</b><span>per day, insurance included</span></div></li>
+          <li><span className="ico"><Ico d={t.noDeposit ? I.shield : I.truck} /></span><div><b>{t.noDeposit ? 'No deposit' : 'Free advice, fast delivery'}</b><span>{t.noDeposit ? 'nothing frozen on your card' : 'to your hotel or home'}</span></div></li>
         </ul>
 
-        <Booking t={t} fleet={fleet} carId={carId} setCarId={setCarId} />
+        <section className="book-sec" aria-label="Booking">
+          <Head pill="Instant quote" title="Get your price" sub="Pick a car and dates. The total is shown upfront, no hidden fees." />
+          <Booking t={t} fleet={fleet} carId={carId} setCarId={setCarId} />
+        </section>
 
         <section className="sec" id="fleet">
-          <div className="head"><h2>Fleet</h2><p className="mut">Daily and monthly rates. Insurance included.</p></div>
+          <Head pill="Fleet" title="Choose your car" sub="Daily and monthly rates. Insurance included." />
           <div className="grid">
             {fleet.map((c) => (
               <button type="button" className="card" key={c.id} onClick={() => pick(c.id)} aria-label={`${c.name}: get price`}>
-                <CarArt car={c} className="card-car" />
+                <span className="pic"><CarArt car={c} /></span>
                 <span className="mut small">{c.cls} · {c.seats} seats · automatic</span>
                 <h3>{c.name}</h3>
                 <span className="price"><b>{aed(c.day)}</b> / day</span>
@@ -145,11 +173,27 @@ export default function App() {
         </section>
 
         <section className="sec" id="how">
-          <div className="head"><h2>How it works</h2></div>
+          <Head pill="Choose · Send · Drive" title="How it works" sub="From message to keys in about an hour." />
           <ol className="steps">
-            <li><h3>Choose a car</h3><p>Pick a car and dates above, or message us and we’ll suggest one.</p></li>
-            <li><h3>Send documents</h3><p>Passport, visa page and driving licence. Tourists may need an international driving permit.</p></li>
-            <li><h3>Get the keys</h3><p>Collect the car at our office in {t.area} or get it delivered to your door.</p></li>
+            <li>
+              <h3>Choose a car</h3><p>Pick a car and dates above, or message us and we’ll suggest one.</p>
+              <div className="viz viz-list" aria-hidden="true">
+                {fleet.slice(0, 4).map((c, i) => <span key={c.id} className={i === 1 ? 'on' : ''}><Ico d={I.car} />{c.name}</span>)}
+              </div>
+            </li>
+            <li>
+              <h3>Send documents</h3><p>Passport, visa page and driving licence. Tourists may need an international permit.</p>
+              <div className="viz viz-docs" aria-hidden="true">
+                {['Passport', 'Visa', 'Licence'].map((d) => <span key={d}><Ico d={I.doc} />{d}</span>)}
+              </div>
+            </li>
+            <li>
+              <h3>Get the keys</h3><p>Collect the car in {t.area} or get it delivered to your door.</p>
+              <div className="viz viz-chat" aria-hidden="true">
+                <span className="bubble">Your car is outside 🔑</span>
+                <span className="input">Message us on WhatsApp <i><Arrow /></i></span>
+              </div>
+            </li>
           </ol>
         </section>
 
@@ -165,14 +209,15 @@ export default function App() {
             <p className="mut">{t.address}</p>
             <a className="connect" href={map} target="_blank" rel="noopener">Open in Google Maps <Arrow /></a>
           </div>
-          <a className="btn btn-light" href={hello} target="_blank" rel="noopener">Message on WhatsApp <Arrow /></a>
+          <a className="btn btn-light" href={hello} target="_blank" rel="noopener" onClick={() => trackLead('contact')}>Message on WhatsApp <Arrow /></a>
         </section>
       </main>
 
       <footer className="foot wrap">
         <span>© {new Date().getFullYear()} {t.name}</span>
-        <span className="mut">Car rental in {t.area}, Dubai</span>
+        <span className="mut">Car rental in {t.area}, Dubai · <button type="button" className="ck-link" onClick={openCookieSettings}>Cookie settings</button></span>
       </footer>
+      <Cookies trackers={trackers} />
     </>
   )
 }

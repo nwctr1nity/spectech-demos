@@ -6,7 +6,7 @@ export function CarArt({ car, className, hero = false }: { car: Pick<Car, 'id' |
   const base = `/cars/${wide ? 'hero-911' : car.id}`
   const [sm, lg] = wide ? [900, 1600] : [640, 1200]
   return (
-    <img className={`${className ?? ''}${hero && !wide ? ' narrow' : ''}`} src={`${base}.webp`} srcSet={`${base}-sm.webp ${sm}w, ${base}.webp ${lg}w`}
+    <img className={[className, hero && !wide && 'narrow'].filter(Boolean).join(' ') || undefined} src={`${base}.webp`} srcSet={`${base}-sm.webp ${sm}w, ${base}.webp ${lg}w`}
       sizes={hero ? '(max-width: 1100px) 100vw, 1100px' : '(max-width: 600px) 100vw, 420px'}
       width={wide ? 1600 : 1200} height={wide ? 661 : 800} alt={car.name}
       loading={hero ? 'eager' : 'lazy'} decoding="async" />

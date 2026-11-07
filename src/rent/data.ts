@@ -30,6 +30,9 @@ export type Tenant = {
   headline: string
   lead: string
   fleet: string[]
+  /** Optional tracker ids, loaded only after cookie consent */
+  ga4?: string
+  pixel?: string
 }
 
 export const CARS: Car[] = [
