@@ -3,32 +3,10 @@ import { Select } from '../Select'
 import { CarArt } from './Car'
 import { openCookieSettings, readQuote, saveQuote, trackLead } from './consent'
 import { Cookies } from './Cookies'
-import { CARS, COVER, DELIVERY, TENANTS, aed, quote, tenantFromPath, wa, type Car, type Tenant } from './data'
-
-const Arrow = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 12 12 4M5.5 4H12v6.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
-)
-
-const I = {
-  star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z',
-  clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3.5 2',
-  tag: 'M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9zM8.5 8.5h.01',
-  shield: 'M12 3l7.5 3v5.5c0 4.5-3.2 8-7.5 9.5-4.3-1.5-7.5-5-7.5-9.5V6zM8.8 12l2.2 2.2 4.2-4.4',
-  truck: 'M2.5 6.5h11v9h-11zM13.5 9.5h4l3 3.2v2.8h-7M6.5 18.5a1.8 1.8 0 1 0 0-.01M17 18.5a1.8 1.8 0 1 0 0-.01',
-  doc: 'M6.5 3.5h7l4 4v13h-11zM13.5 3.5v4h4M9 12h6M9 15.5h6',
-  car: 'M4 15.5v-3l2-4.5h12l2 4.5v3M3.5 15.5h17v3h-17zM7 18.5v1.5M17 18.5v1.5M4.5 12.5h15',
-  key: 'M14.5 4a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM10.6 13.4 3.5 20.5M6 18l2 2M8 16l1.5 1.5',
-}
-const Ico = ({ d }: { d: string }) => (
-  <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d={d} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-)
-const Head = ({ pill, title, sub }: { pill: string; title: string; sub?: string }) => (
-  <div className="head">
-    <span className="pill"><i aria-hidden="true" />{pill}</span>
-    <h2>{title}</h2>
-    {sub && <p className="mut">{sub}</p>}
-  </div>
-)
+import { Account, Admin, Auth, PENDING } from './Cabinet'
+import { initStore, liveFleet, me, today, useDb, type Request } from './store'
+import { Arrow, Head, I, Ico } from './ui'
+import { COVER, DELIVERY, TENANTS, aed, quote, tenantFromPath, wa, type Car, type Tenant } from './data'
 
 function Index() {
   return (
@@ -44,11 +22,20 @@ function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId
   const [days, setDays] = useState(saved?.days ?? 3)
   const [del, setDel] = useState(DELIVERY.some((x) => x.id === saved?.del) ? saved!.del : DELIVERY[1].id)
   const [cov, setCov] = useState(COVER.some((x) => x.id === saved?.cov) ? saved!.cov : COVER[0].id)
+  const [start, setStart] = useState(() => (saved?.start && saved.start >= today() ? saved.start : today()))
   const car = fleet.find((c) => c.id === carId) ?? fleet[0]
   const d = DELIVERY.find((x) => x.id === del)!
   const c = COVER.find((x) => x.id === cov)!
   const q = useMemo(() => quote(car, days, d.fee, c.perDay, t.noDeposit), [car, days, d, c, t.noDeposit])
-  useEffect(() => { saveQuote({ car: car.id, days: q.d, del, cov }) }, [car.id, q.d, del, cov])
+  useEffect(() => { saveQuote({ car: car.id, days: q.d, del, cov, start }) }, [car.id, q.d, del, cov, start])
+  const request = () => {
+    const r: Omit<Request, 'id' | 'no' | 'userId' | 'status' | 'created'> = {
+      carId: car.id, carName: car.name, start, days: q.d, delivery: d.label, cover: c.label, total: Math.round(q.total), deposit: q.deposit,
+    }
+    try { sessionStorage.setItem(PENDING, JSON.stringify(r)) } catch { /* ignore */ }
+    trackLead(car.name, q.total)
+    location.hash = me() ? '#/account' : '#/login'
+  }
   const msg = wa(t.whatsapp,
     `Hello! I'd like to rent ${car.name} for ${q.d} day${q.d > 1 ? 's' : ''}.\n${d.label}, ${c.label}.\nPrice on the website: ${aed(q.total)}.`)
 
@@ -59,6 +46,10 @@ function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId
           <label htmlFor="b-car">Car</label>
           <Select id="b-car" value={car.id} onChange={setCarId}
             options={fleet.map((x) => ({ value: x.id, label: x.name, hint: `${x.cls} · from ${aed(x.day)} a day` }))} />
+        </div>
+        <div className="fld">
+          <label htmlFor="b-start">Pick-up date</label>
+          <input id="b-start" className="field" type="date" min={today()} value={start} onChange={(e) => e.target.value && setStart(e.target.value)} />
         </div>
         <div className="fld">
           <span className="lbl" id="b-days-l">Rental period</span>
@@ -97,7 +88,8 @@ function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId
           <div><dt>Security deposit, refundable</dt><dd>{q.deposit ? aed(q.deposit) : 'No deposit'}</dd></div>
         </dl>
         <div className="total" aria-live="polite"><span>Total</span><b>{aed(q.total)}</b></div>
-        <a className="btn btn-light" href={msg} target="_blank" rel="noopener" onClick={() => trackLead(car.name, q.total)}>Book on WhatsApp <Arrow /></a>
+        <button type="button" className="btn btn-light" onClick={request}>Request booking <Arrow /></button>
+        <a className="btn btn-line wide" href={msg} target="_blank" rel="noopener" onClick={() => trackLead(car.name, q.total)}>Ask on WhatsApp</a>
       </div>
     </div>
   )
@@ -105,14 +97,25 @@ function Booking({ t, fleet, carId, setCarId }: { t: Tenant; fleet: Car[]; carId
 
 export default function App() {
   const t = tenantFromPath(location.pathname)
-  const fleet = useMemo(() => (t ? t.fleet.map((id) => CARS.find((c) => c.id === id)!) : []), [t])
-  const [carId, setCarId] = useState(() => { const id = readQuote()?.car; return fleet.some((c) => c.id === id) ? id! : fleet[0]?.id ?? '' })
+  const db = useDb()
+  const [route, setRoute] = useState(location.hash)
+  useEffect(() => { if (t) void initStore(t) }, [t])
+  useEffect(() => {
+    const on = () => { setRoute(location.hash); if (location.hash.startsWith('#/')) scrollTo(0, 0) }
+    addEventListener('hashchange', on); return () => removeEventListener('hashchange', on)
+  }, [])
+  const fleet = useMemo(() => (t ? liveFleet(t, db) : []), [t, db])
+  const [chosen, setCarId] = useState(() => readQuote()?.car ?? '')
+  const carId = fleet.some((c) => c.id === chosen) ? chosen : fleet[0]?.id ?? ''
   const trackers = useMemo(() => ({ ga4: t?.ga4, pixel: t?.pixel }), [t])
   useEffect(() => { if (t) document.title = `${t.name}: car rental in ${t.area}, Dubai` }, [t])
   if (!t) return <Index />
+  if (!db) return <div className="loading" aria-busy="true" />
+  const user = me(db)
+  const view = route.startsWith('#/') ? route.slice(2).split('?')[0] : ''
 
-  const hero = ['p911', 'rrsport', 'patrol'].map((id) => fleet.find((c) => c.id === id)).find(Boolean) ?? fleet[0]
-  const from = Math.min(...fleet.map((c) => c.day))
+  const hero = ['p911', 'rrsport', 'patrol'].map((id) => fleet.find((c) => c.id === id)).find(Boolean) ?? fleet[0] ?? { id: 'p911', name: t.name }
+  const from = fleet.length ? Math.min(...fleet.map((c) => c.day)) : 0
   const pick = (id: string) => { setCarId(id); document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' }) }
   const hello = wa(t.whatsapp, 'Hello! I would like to rent a car.')
   const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${t.name} ${t.address}`)}`
@@ -122,17 +125,20 @@ export default function App() {
       <div className="demo-bar">Demo website prepared for {t.name}. Fleet and prices are examples.</div>
       <div className="frame">
         <header className="nav">
-          <a className="logo" href="#top">{t.short}<span>Rent A Car</span></a>
+          <a className="logo" href="#top" onClick={() => { if (view) location.hash = '' }}>{t.short}<span>Rent A Car</span></a>
           <nav aria-label="Sections">
             <a href="#fleet">Fleet</a>
             <a href="#book">Prices</a>
             <a href="#how">How it works</a>
             <a href="#contact">Contact</a>
           </nav>
+          <a className="nav-acc" href={user ? (user.role === 'owner' ? '#/admin' : '#/account') : '#/login'}>
+            <Ico d={I.user} />{user ? (user.role === 'owner' ? 'Admin' : user.name.split(' ')[0]) : 'Sign in'}
+          </a>
           <a className="btn btn-line" href="#book">Book now</a>
         </header>
 
-        <section className="hero" id="top">
+        {view ? null : <section className="hero" id="top">
           <p className="eyebrow">{t.area} · Dubai · {t.hours}</p>
           <h1>{t.headline}</h1>
           <p className="lead">{t.lead}</p>
@@ -140,8 +146,13 @@ export default function App() {
           <div className="stage" aria-hidden="true">
             <CarArt car={hero} className="hero-car" hero />
           </div>
-        </section>
+        </section>}
       </div>
+
+      {view === 'login' && <Auth t={t} />}
+      {view === 'account' && <Account t={t} db={db} />}
+      {view === 'admin' && <Admin t={t} db={db} />}
+      {!view && <>
 
       <main className="wrap">
         <ul className="facts">
@@ -153,7 +164,7 @@ export default function App() {
 
         <section className="book-sec" aria-label="Booking">
           <Head pill="Instant quote" title="Get your price" sub="Pick a car and dates. The total is shown upfront, no hidden fees." />
-          <Booking t={t} fleet={fleet} carId={carId} setCarId={setCarId} />
+          {fleet.length > 0 && <Booking t={t} fleet={fleet} carId={carId} setCarId={setCarId} />}
         </section>
 
         <section className="sec" id="fleet">
@@ -212,6 +223,7 @@ export default function App() {
           <a className="btn btn-light" href={hello} target="_blank" rel="noopener" onClick={() => trackLead('contact')}>Message on WhatsApp <Arrow /></a>
         </section>
       </main>
+      </>}
 
       <footer className="foot wrap">
         <span>© {new Date().getFullYear()} {t.name}</span>

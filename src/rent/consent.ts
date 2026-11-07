@@ -31,7 +31,7 @@ export function saveConsent(analytics: boolean, marketing: boolean) {
   return c
 }
 
-export type SavedQuote = { car: string; days: number; del: string; cov: string }
+export type SavedQuote = { car: string; days: number; del: string; cov: string; start?: string }
 export const readQuote = () => (readConsent() ? json<SavedQuote>(getCookie(QUOTE)) : undefined)
 export function saveQuote(q: SavedQuote) { if (readConsent()) setCookie(QUOTE, JSON.stringify(q), 30) }
 
