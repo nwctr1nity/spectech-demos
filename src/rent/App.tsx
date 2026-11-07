@@ -86,7 +86,7 @@ export default function App() {
   useEffect(() => { if (t) document.title = `${t.name}: car rental in ${t.area}, Dubai` }, [t])
   if (!t) return <Index />
 
-  const hero = [...fleet].sort((a, b) => b.day - a.day)[0]
+  const hero = ['p911', 'rrsport', 'patrol'].map((id) => fleet.find((c) => c.id === id)).find(Boolean) ?? fleet[0]
   const from = Math.min(...fleet.map((c) => c.day))
   const pick = (id: string) => { setCarId(id); document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' }) }
   const hello = wa(t.whatsapp, 'Hello! I would like to rent a car.')
@@ -113,9 +113,7 @@ export default function App() {
           <p className="lead">{t.lead}</p>
           <a className="connect" href={hello} target="_blank" rel="noopener">Let’s connect <Arrow /></a>
           <div className="stage" aria-hidden="true">
-            <CarArt car={hero} className="hero-car" />
-            <CarArt car={hero} className="hero-car reflect" />
-            <div className="floor" />
+            <CarArt car={hero} className="hero-car" hero />
           </div>
         </section>
       </div>

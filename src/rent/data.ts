@@ -2,15 +2,10 @@
 // Name, phone, address, hours, rating and the quoted review come from the company's public Google Maps listing.
 // The fleet and prices are typical Dubai examples, NOT the company's real offer: replace on sale.
 
-export type Body = 'coupe' | 'sedan' | 'suv'
-
 export type Car = {
   id: string
   cls: string
   name: string
-  body: Body
-  /** paint for the drawn car */
-  paint: 'silver' | 'white' | 'graphite' | 'black'
   seats: number
   /** AED per day */
   day: number
@@ -38,13 +33,13 @@ export type Tenant = {
 }
 
 export const CARS: Car[] = [
-  { id: 'sunny', cls: 'Economy', name: 'Nissan Sunny', body: 'sedan', paint: 'white', seats: 5, day: 89, month: 1499, deposit: 1000 },
-  { id: 'corolla', cls: 'Compact', name: 'Toyota Corolla', body: 'sedan', paint: 'silver', seats: 5, day: 119, month: 1999, deposit: 1000 },
-  { id: 'camry', cls: 'Mid-size', name: 'Toyota Camry', body: 'sedan', paint: 'graphite', seats: 5, day: 169, month: 2799, deposit: 1500 },
-  { id: 'patrol', cls: 'SUV', name: 'Nissan Patrol', body: 'suv', paint: 'white', seats: 7, day: 399, month: 6999, deposit: 2500 },
-  { id: 'eclass', cls: 'Luxury', name: 'Mercedes-Benz E-Class', body: 'sedan', paint: 'black', seats: 5, day: 449, month: 7999, deposit: 3000 },
-  { id: 'rrsport', cls: 'Luxury SUV', name: 'Range Rover Sport', body: 'suv', paint: 'silver', seats: 5, day: 899, month: 15999, deposit: 5000 },
-  { id: 'p911', cls: 'Sports', name: 'Porsche 911 Carrera', body: 'coupe', paint: 'silver', seats: 4, day: 1499, month: 27999, deposit: 5000 },
+  { id: 'sunny', cls: 'Economy', name: 'Nissan Sunny', seats: 5, day: 89, month: 1499, deposit: 1000 },
+  { id: 'corolla', cls: 'Compact', name: 'Toyota Corolla', seats: 5, day: 119, month: 1999, deposit: 1000 },
+  { id: 'camry', cls: 'Mid-size', name: 'Toyota Camry', seats: 5, day: 169, month: 2799, deposit: 1500 },
+  { id: 'patrol', cls: 'SUV', name: 'Nissan Patrol', seats: 7, day: 399, month: 6999, deposit: 2500 },
+  { id: 'eclass', cls: 'Luxury', name: 'Mercedes-Benz E-Class', seats: 5, day: 449, month: 7999, deposit: 3000 },
+  { id: 'rrsport', cls: 'Luxury SUV', name: 'Range Rover Sport', seats: 5, day: 899, month: 15999, deposit: 5000 },
+  { id: 'p911', cls: 'Sports', name: 'Porsche 911 Carrera', seats: 4, day: 1499, month: 27999, deposit: 5000 },
 ]
 
 export const DELIVERY = [
