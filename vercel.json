@@ -4,7 +4,7 @@
   "installCommand": "pnpm install",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/s/(.*)", "destination": "/index.html" }, { "source": "/rent/(.*)", "destination": "/rent/index.html" }],
+  "rewrites": [{ "source": "/s/(.*)", "destination": "/index.html" }, { "source": "/rent/(.*)", "destination": "/rent/index.html" }, { "source": "/nails/(.*)", "destination": "/nails/index.html" }],
   "headers": [
     { "source": "/(.*)", "headers": [
       { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
