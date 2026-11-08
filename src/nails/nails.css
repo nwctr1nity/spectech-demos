@@ -5,17 +5,16 @@
 .btn-light:disabled { background: #2a2a2b; color: #8e8e8c; box-shadow: none; cursor: not-allowed; transform: none }
 
 /* Hero: studio photo of a manicured hand, fading into the black page */
-.n-stage { margin-top: clamp(-10px, 0vw, 0px) }
+.n-stage { display: grid; justify-items: center; margin-top: clamp(4px, 1vw, 14px) }
 .hero-photo {
-  display: block; width: 100%; height: auto; mix-blend-mode: lighten;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 22%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 18%, #000 78%, transparent);
+  display: block; width: min(520px, 80vw); height: auto; mix-blend-mode: lighten;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, #000 55%, transparent 96%);
   -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 22%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 18%, #000 78%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent), linear-gradient(to bottom, #000 55%, transparent 96%);
   mask-composite: intersect;
   animation: hp-in 1.2s var(--ease) both;
 }
-@keyframes hp-in { from { opacity: 0; transform: translateX(-24px) } }
-@media (max-width: 640px) { .hero-photo { aspect-ratio: 5 / 4; object-fit: cover; object-position: 66% 50% } }
+@keyframes hp-in { from { opacity: 0; transform: translateY(40px) } }
 
 /* Booking */
 .nb { grid-template-columns: 1.35fr 1fr }

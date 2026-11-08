@@ -158,8 +158,8 @@ export default function App() {
           <p className="lead">{t.lead}</p>
           <a className="connect" href="#book">Book online <Arrow /></a>
           <div className="stage n-stage" aria-hidden="true">
-            <img className="hero-photo" src="/nails/hero-hand.webp" srcSet="/nails/hero-hand-sm.webp 900w, /nails/hero-hand.webp 1600w"
-              sizes="(max-width: 1100px) 100vw, 1100px" width={1600} height={613} alt="" />
+            <img className="hero-photo" src="/nails/hero-smoky.webp" srcSet="/nails/hero-smoky-sm.webp 480w, /nails/hero-smoky.webp 840w"
+              sizes="(max-width: 640px) 80vw, 520px" width={840} height={941} alt="" />
           </div>
         </section>}
       </div>
