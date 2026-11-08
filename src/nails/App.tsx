@@ -16,8 +16,6 @@ function Index() {
   )
 }
 
-const SWATCHES = ['nude', 'rose', 'cherry', 'milk', 'chrome']
-
 function Booking({ t, db, pick, setPick, master, setMaster }: {
   t: Tenant; db: DbT; pick: string[]; setPick: (v: string[]) => void; master: string; setMaster: (v: string) => void
 }) {
@@ -159,8 +157,9 @@ export default function App() {
           <h1>{t.headline}</h1>
           <p className="lead">{t.lead}</p>
           <a className="connect" href="#book">Book online <Arrow /></a>
-          <div className="swatches" aria-hidden="true">
-            {SWATCHES.map((s, i) => <span key={s} className={`sw sw-${s}`} style={{ animationDelay: `${i * 0.12}s` }} />)}
+          <div className="stage n-stage" aria-hidden="true">
+            <img className="hero-photo" src="/nails/hero-hand.webp" srcSet="/nails/hero-hand-sm.webp 900w, /nails/hero-hand.webp 1600w"
+              sizes="(max-width: 1100px) 100vw, 1100px" width={1600} height={613} alt="" />
           </div>
         </section>}
       </div>
