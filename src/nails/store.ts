@@ -53,24 +53,30 @@ async function seed(t: Tenant): Promise<Db> {
   const plan: [number, string[], number, number, number, Status][] = [
     [0, ['mani-gel'], 0, 0, t.open + 1, 'confirmed'],
     [1, ['mani-pedi'], 1, 0, t.open + 2, 'confirmed'],
-    [2, ['lash-volume'], 2 % m.length, 0, t.open + 4, 'confirmed'],
+    [2, ['lash-volume'], 2, 0, t.open + 4, 'confirmed'],
     [3, ['mani-russian'], 0, 0, t.open + 5, 'confirmed'],
     [4, ['ext-gel'], 1, 0, t.open + 6, 'new'],
     [1, ['mani-french', 'pedi-gel'], 0, 1, t.open + 3, 'new'],
-    [2, ['brows'], 2 % m.length, 1, t.open + 7, 'confirmed'],
+    [2, ['brows'], 2, 1, t.open + 7, 'confirmed'],
     [0, ['mani-gel', 'remove'], 1, -7, t.open + 2, 'done'],
     [3, ['pedi-classic'], 0, -3, t.open + 5, 'noshow'],
-    [4, ['lash-lift'], 2 % m.length, -2, t.open + 1, 'cancelled'],
+    [4, ['lash-lift'], 2, -2, t.open + 1, 'cancelled'],
   ]
-  const appts: Appt[] = plan.map(([g, ids, mi, off, h, status], i) => {
+  // keep only services this salon offers and, with fewer masters, drop bookings that would overlap
+  const appts: Appt[] = []
+  for (const [g, ids, mi, off, h, status] of plan) {
+    if (!ids.every((id) => t.services.includes(id))) continue
     const ss = ids.map((id) => SERVICES.find((s) => s.id === id)!)
-    return {
-      id: uid(), no: 501 + i, userId: `g${g}`, services: ids, title: ss.map((s) => s.name).join(' + '), masterId: m[mi],
-      date: addDays(d0, off), start: h * 60, mins: ss.reduce((a, s) => a + s.mins, 0), price: ss.reduce((a, s) => a + s.price, 0),
+    const a: Appt = {
+      id: uid(), no: 501 + appts.length, userId: `g${g}`, services: ids, title: ss.map((s) => s.name).join(' + '), masterId: m[mi % m.length],
+      date: addDays(d0, off), start: h * 60, mins: ss.reduce((x, s) => x + s.mins, 0), price: ss.reduce((x, s) => x + s.price, 0),
       status, created: now,
     }
-  })
-  return { v: 1, users, appts, prices, seq: 501 + plan.length }
+    if (a.start + a.mins > t.close * 60) continue
+    if (appts.some((b) => b.masterId === a.masterId && b.date === a.date && a.start < b.start + b.mins && b.start < a.start + a.mins)) continue
+    appts.push(a)
+  }
+  return { v: 1, users, appts, prices, seq: 501 + appts.length }
 }
 
 function save() {

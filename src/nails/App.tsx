@@ -140,7 +140,7 @@ export default function App() {
       <div className="demo-bar">Demo website prepared for {t.name}. Services, prices and team are examples.</div>
       <div className="frame">
         <header className="nav">
-          <a className="logo" href="#top" onClick={() => { if (view) location.hash = '' }}>{t.short}<span>Beauty Studio</span></a>
+          <a className="logo" href="#top" onClick={() => { if (view) location.hash = '' }}>{t.short}<span>{t.tag}</span></a>
           <nav aria-label="Sections">
             <a href="#book">Prices</a>
             <a href="#team">Team</a>
@@ -181,7 +181,7 @@ export default function App() {
         </section>
 
         <section className="sec" id="team">
-          <Head pill="Team" title="Our masters" sub="Pick your favourite master or let us choose the first one free." />
+          <Head pill="Team" title={t.masters.length > 1 ? 'Our masters' : 'Your master'} sub={t.masters.length > 1 ? 'Pick your favourite master or let us choose the first one free.' : `Every set is done personally by ${t.masters[0].name}.`} />
           <div className="team">
             {t.masters.map((m) => (
               <button key={m.id} type="button" className="card master" onClick={() => { setMaster(m.id); toBook() }}>
