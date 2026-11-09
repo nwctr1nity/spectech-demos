@@ -37,7 +37,11 @@ export const ownerLogin = (t: Tenant) => ({ email: `owner@${t.slug}.demo`, pass:
 async function seed(t: Tenant): Promise<Db> {
   const o = ownerLogin(t)
   const now = new Date().toISOString()
-  const guests: [string, string, string][] = [
+  const guests: [string, string, string][] = t.kind === 'barber' ? [
+    ['Ahmed Saeed', 'ahmed@example.com', '+971 50 000 0101'], ['James Miller', 'james@example.com', '+971 50 000 0102'],
+    ['Arjun Nair', 'arjun@example.com', '+971 50 000 0103'], ['Omar Khalil', 'omar@example.com', '+971 50 000 0104'],
+    ['Daniyar Seitkali', 'daniyar@example.com', '+971 50 000 0105'],
+  ] : [
     ['Anna Petrova', 'anna@example.com', '+971 50 000 0101'], ['Laura Smith', 'laura@example.com', '+971 50 000 0102'],
     ['Dana Akhmetova', 'dana@example.com', '+971 50 000 0103'], ['Mariam Hassan', 'mariam@example.com', '+971 50 000 0104'],
     ['Olga Ivanova', 'olga@example.com', '+971 50 000 0105'],
@@ -63,6 +67,12 @@ async function seed(t: Tenant): Promise<Db> {
     [4, ['lash-lift'], 2, -2, t.open + 1, 'cancelled'],
   ]
   // keep only services this salon offers and, with fewer masters, drop bookings that would overlap
+  // barbershops get the same week, with barber services in place of the salon ones
+  const BARBER: Record<string, string> = {
+    'mani-gel': 'cut-fade', 'mani-pedi': 'cut-beard', 'lash-volume': 'facial', 'mani-russian': 'cut-classic', 'ext-gel': 'hair-color',
+    'mani-french': 'cut-fade', 'pedi-gel': 'beard-trim', brows: 'hot-towel', remove: 'beard-trim', 'pedi-classic': 'head-shave', 'lash-lift': 'hair-spa',
+  }
+  if (t.kind === 'barber') for (const p of plan) p[1] = p[1].map((id) => BARBER[id] ?? id)
   const appts: Appt[] = []
   for (const [g, ids, mi, off, h, status] of plan) {
     if (!ids.every((id) => t.services.includes(id))) continue

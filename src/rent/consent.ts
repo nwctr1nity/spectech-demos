@@ -10,7 +10,7 @@ export type Trackers = { ga4?: string; pixel?: string }
 const DAY = 864e5
 const KEY = 'rent_consent'
 const QUOTE = 'rent_quote'
-const path = () => location.pathname.match(/^\/(rent|nails)\/[^/]+\//)?.[0] ?? '/'
+const path = () => location.pathname.match(/^\/(rent|nails|barber)\/[^/]+\//)?.[0] ?? '/'
 
 export function getCookie(name: string) {
   const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`))

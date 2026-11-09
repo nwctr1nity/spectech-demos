@@ -1,11 +1,15 @@
-// Demo sites for Dubai nail and beauty salons, served at /nails/<slug>/.
+// Demo sites for Dubai nail salons (/nails/<slug>/) and barbershops (/barber/<slug>/, tenants in barbers.ts).
 // Name, phone, address, hours, rating and the quoted review come from the salon's public Google Maps listing.
 // Services, prices and the team are typical examples, NOT the salon's real offer: replace on sale.
 
-export type Cat = 'Manicure' | 'Pedicure' | 'Extensions' | 'Lashes & brows'
+import { BARBERS } from './barbers'
+
+export type Kind = 'nails' | 'barber'
+export type Cat = 'Manicure' | 'Pedicure' | 'Extensions' | 'Lashes & brows' | 'Haircut' | 'Beard & shave' | 'Grooming'
 export type Service = { id: string; cat: Cat; name: string; mins: number; price: number; note?: string }
 export type Master = { id: string; name: string; role: string; langs: string }
 export type Tenant = {
+  kind?: Kind
   slug: string; name: string; short: string; tag: string; area: string; address: string; phone: string; whatsapp: string
   /** opening hours, 24h clock */
   open: number; close: number; hours: string
@@ -18,7 +22,8 @@ export type Tenant = {
   ga4?: string; pixel?: string
 }
 
-export const CATS: Cat[] = ['Manicure', 'Pedicure', 'Extensions', 'Lashes & brows']
+export const CATS_BY: Record<Kind, Cat[]> = { nails: ['Manicure', 'Pedicure', 'Extensions', 'Lashes & brows'], barber: ['Haircut', 'Beard & shave', 'Grooming'] }
+export const CATS = CATS_BY.nails
 
 export const SERVICES: Service[] = [
   { id: 'mani-classic', cat: 'Manicure', name: 'Classic manicure', mins: 45, price: 90 },
@@ -36,12 +41,25 @@ export const SERVICES: Service[] = [
   { id: 'lash-volume', cat: 'Lashes & brows', name: 'Volume lash extensions', mins: 150, price: 350 },
   { id: 'lash-lift', cat: 'Lashes & brows', name: 'Lash lift & tint', mins: 60, price: 200 },
   { id: 'brows', cat: 'Lashes & brows', name: 'Brow shaping & tint', mins: 40, price: 120 },
+  // barbershop menu
+  { id: 'cut-classic', cat: 'Haircut', name: "Men's haircut", mins: 30, price: 50, note: 'Wash, cut, styling' },
+  { id: 'cut-fade', cat: 'Haircut', name: 'Skin fade', mins: 45, price: 70, note: 'Clippers and scissors, sharp line-up' },
+  { id: 'cut-beard', cat: 'Haircut', name: 'Haircut + beard', mins: 60, price: 90 },
+  { id: 'cut-kids', cat: 'Haircut', name: 'Kids haircut', mins: 30, price: 40, note: 'Under 12' },
+  { id: 'head-shave', cat: 'Haircut', name: 'Head shave', mins: 30, price: 40 },
+  { id: 'beard-trim', cat: 'Beard & shave', name: 'Beard trim & shape', mins: 20, price: 35 },
+  { id: 'hot-towel', cat: 'Beard & shave', name: 'Hot towel shave', mins: 30, price: 50, note: 'Straight razor, hot towel, aftershave balm' },
+  { id: 'beard-color', cat: 'Beard & shave', name: 'Beard colour', mins: 30, price: 50 },
+  { id: 'hair-color', cat: 'Grooming', name: 'Hair colour', mins: 45, price: 120 },
+  { id: 'facial', cat: 'Grooming', name: "Men's facial", mins: 45, price: 120, note: 'Scrub, steam, mask' },
+  { id: 'hair-spa', cat: 'Grooming', name: 'Hair spa & head massage', mins: 30, price: 80 },
+  { id: 'mani-men', cat: 'Grooming', name: 'Manicure & pedicure', mins: 75, price: 130 },
 ]
 
-const ph = (raw: string) => ({ phone: raw, whatsapp: raw.replace(/\D/g, '') })
-const ALL = SERVICES.map((s) => s.id)
+export const ph = (raw: string) => ({ phone: raw, whatsapp: raw.replace(/\D/g, '') })
+const ALL = SERVICES.filter((s) => CATS_BY.nails.includes(s.cat)).map((s) => s.id)
 
-export const TENANTS: Tenant[] = [
+const NAILS: Tenant[] = [
   {
     slug: 'ayas-beauty', name: "Aya's Beauty Studio", short: "Aya's", tag: 'Beauty Studio', area: 'JLT',
     address: 'Lake View Tower, B2, Cluster B, Jumeirah Lakes Towers, Dubai', ...ph('+971 52 128 9922'),
@@ -107,9 +125,12 @@ export const TENANTS: Tenant[] = [
   },
 ]
 
+export const TENANTS: Tenant[] = [...NAILS, ...BARBERS]
+export const kindOf = (t: Tenant): Kind => t.kind ?? 'nails'
+export const kindFromPath = (p: string): Kind => (p.startsWith('/barber/') ? 'barber' : 'nails')
 export const tenantFromPath = (p: string) => {
-  const m = p.match(/\/nails\/([^/]+)/)
-  return m ? TENANTS.find((t) => t.slug === m[1]) : undefined
+  const m = p.match(/^\/(nails|barber)\/([^/]+)/)
+  return m ? TENANTS.find((t) => t.slug === m[2] && kindOf(t) === m[1]) : undefined
 }
 export const aed = (n: number) => `${Math.round(n).toLocaleString('en-US')} AED`
 export const dur = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`)

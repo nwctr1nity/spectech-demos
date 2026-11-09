@@ -4,14 +4,14 @@ import { openCookieSettings, trackLead } from '../rent/consent'
 import { Cookies } from '../rent/Cookies'
 import { Arrow, Head, I, Ico } from '../rent/ui'
 import { Account, Admin, Auth, PENDING } from './Cabinet'
-import { CATS, TENANTS, aed, dur, hhmm, tenantFromPath, wa, type Tenant } from './data'
+import { CATS_BY, TENANTS, aed, dur, hhmm, kindFromPath, kindOf, tenantFromPath, wa, type Tenant } from './data'
 import { addDays, fmtDay, freeSlots, initStore, livePrices, me, today, useDb, type Appt, type DbT } from './store'
 
 function Index() {
   return (
     <main className="index">
       <h1>Demo sites</h1>
-      {TENANTS.map((t) => <a key={t.slug} href={`/nails/${t.slug}/`}>{t.name}</a>)}
+      {TENANTS.filter((t) => kindOf(t) === kindFromPath(location.pathname)).map((t) => <a key={t.slug} href={`/${kindOf(t)}/${t.slug}/`}>{t.name}</a>)}
     </main>
   )
 }
@@ -20,6 +20,8 @@ function Booking({ t, db, pick, setPick, master, setMaster }: {
   t: Tenant; db: DbT; pick: string[]; setPick: (v: string[]) => void; master: string; setMaster: (v: string) => void
 }) {
   const menu = livePrices(t, db).filter((s) => s.available)
+  const CATS = CATS_BY[kindOf(t)]
+  const pro = kindOf(t) === 'barber' ? 'barber' : 'master'
   const [cat, setCat] = useState(CATS[0])
   const [date, setDate] = useState(today())
   const [time, setTime] = useState<number | null>(null)
@@ -71,9 +73,9 @@ function Booking({ t, db, pick, setPick, master, setMaster }: {
           </ul>
         </div>
         <div className="fld">
-          <label htmlFor="n-master">2. Master</label>
+          <label htmlFor="n-master">2. {pro === 'barber' ? 'Barber' : 'Master'}</label>
           <Select id="n-master" value={master} onChange={setMaster}
-            options={[{ value: 'any', label: 'Any available master', hint: 'More free times' }, ...t.masters.map((m) => ({ value: m.id, label: m.name, hint: `${m.role} · ${m.langs}` }))]} />
+            options={[{ value: 'any', label: `Any available ${pro}`, hint: 'More free times' }, ...t.masters.map((m) => ({ value: m.id, label: m.name, hint: `${m.role} · ${m.langs}` }))]} />
         </div>
         <div className="fld">
           <span className="lbl">3. Day</span>
@@ -98,7 +100,7 @@ function Booking({ t, db, pick, setPick, master, setMaster }: {
         {chosen.length === 0 ? <p className="mut small">Nothing selected yet.</p> : (
           <dl>
             {chosen.map((s) => <div key={s.id}><dt>{s.name}</dt><dd>{aed(s.price)}</dd></div>)}
-            <div><dt>Master</dt><dd>{who && (master !== 'any' || slot) ? who.name : 'Any'}</dd></div>
+            <div><dt>{pro === 'barber' ? 'Barber' : 'Master'}</dt><dd>{who && (master !== 'any' || slot) ? who.name : 'Any'}</dd></div>
             <div><dt>When</dt><dd>{slot ? `${fmtDay(date)}, ${hhmm(slot.start)}–${hhmm(slot.start + mins)}` : 'Pick a time'}</dd></div>
             <div><dt>Duration</dt><dd>{dur(mins)}</dd></div>
           </dl>
@@ -109,6 +111,26 @@ function Booking({ t, db, pick, setPick, master, setMaster }: {
         <p className="mut small center">Free cancellation up to 3 hours before.</p>
       </div>
     </div>
+  )
+}
+
+/** Hero for barbershops until a photo is ready: a straight razor drawn in light. */
+function BarberArt() {
+  return (
+    <svg className="hero-art" viewBox="0 0 600 360" aria-hidden="true">
+      <defs>
+        <linearGradient id="ba-blade" x1="0" x2="1"><stop offset="0" stopColor="#fff" stopOpacity=".9" /><stop offset=".6" stopColor="#cfd3d6" stopOpacity=".55" /><stop offset="1" stopColor="#7b8287" stopOpacity=".25" /></linearGradient>
+        <linearGradient id="ba-handle" x1="0" x2="1"><stop offset="0" stopColor="var(--rose2)" /><stop offset="1" stopColor="var(--rose)" /></linearGradient>
+        <radialGradient id="ba-glow"><stop offset="0" stopColor="var(--rose)" stopOpacity=".35" /><stop offset="1" stopColor="var(--rose)" stopOpacity="0" /></radialGradient>
+      </defs>
+      <ellipse cx="300" cy="190" rx="260" ry="120" fill="url(#ba-glow)" />
+      <g transform="rotate(-14 300 180)">
+        <path d="M70 168 L330 150 Q352 149 356 166 L360 190 Q362 204 346 205 L84 214 Q62 212 60 192 Z" fill="url(#ba-blade)" />
+        <path d="M84 214 L346 205" stroke="#fff" strokeOpacity=".9" strokeWidth="1.5" />
+        <circle cx="356" cy="182" r="9" fill="#111" stroke="#bbb" strokeWidth="2" />
+        <path d="M356 182 Q420 150 540 160 Q566 164 560 182 Q556 196 530 196 Q430 196 356 182 Z" fill="url(#ba-handle)" />
+      </g>
+    </svg>
   )
 }
 
@@ -124,13 +146,18 @@ export default function App() {
     addEventListener('hashchange', on); return () => removeEventListener('hashchange', on)
   }, [])
   const trackers = useMemo(() => ({ ga4: t?.ga4, pixel: t?.pixel }), [t])
-  useEffect(() => { if (t) document.title = `${t.name}: nails and beauty in ${t.area}, Dubai` }, [t])
+  const barber = t ? kindOf(t) === 'barber' : kindFromPath(location.pathname) === 'barber'
+  const what = barber ? 'barbershop' : 'nails and beauty'
+  useEffect(() => { document.documentElement.dataset.kind = barber ? 'barber' : 'nails' }, [barber])
+  useEffect(() => { if (t) document.title = `${t.name}: ${what} in ${t.area}, Dubai` }, [t, what])
   if (!t) return <Index />
   if (!db) return <div className="loading" aria-busy="true" />
   const user = me(db)
   const view = route.startsWith('#/') ? route.slice(2).split('?')[0] : ''
   const menu = livePrices(t, db).filter((s) => s.available)
-  const from = menu.length ? Math.min(...menu.filter((s) => s.cat === 'Manicure' && s.id !== 'remove').map((s) => s.price)) : 0
+  const first = CATS_BY[kindOf(t)][0]
+  const fromList = menu.filter((s) => s.cat === first && s.id !== 'remove' && s.id !== 'cut-kids').map((s) => s.price)
+  const from = fromList.length ? Math.min(...fromList) : 0
   const hello = wa(t.whatsapp, 'Hello! I would like to book an appointment.')
   const map = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${t.name} ${t.address}`)}`
   const toBook = () => document.getElementById('book')?.scrollIntoView({ behavior: 'smooth' })
@@ -158,8 +185,8 @@ export default function App() {
           <p className="lead">{t.lead}</p>
           <a className="connect" href="#book">Book online <Arrow /></a>
           <div className="stage n-stage" aria-hidden="true">
-            <img className="hero-photo" src="/nails/hero-smoky.webp" srcSet="/nails/hero-smoky-sm.webp 480w, /nails/hero-smoky.webp 840w"
-              sizes="(max-width: 640px) 80vw, 520px" width={840} height={941} alt="" />
+            {barber ? <BarberArt /> : <img className="hero-photo" src="/nails/hero-smoky.webp" srcSet="/nails/hero-smoky-sm.webp 480w, /nails/hero-smoky.webp 840w"
+              sizes="(max-width: 640px) 80vw, 520px" width={840} height={941} alt="" />}
           </div>
         </section>}
       </div>
@@ -171,17 +198,17 @@ export default function App() {
         <ul className="facts">
           <li><span className="ico"><Ico d={I.star} /></span><div><b>{t.rating.value} on Google</b><span>{t.rating.count} reviews</span></div></li>
           <li><span className="ico"><Ico d={I.clock} /></span><div><b>{t.hours.replace('Daily ', '')}</b><span>every day</span></div></li>
-          <li><span className="ico"><Ico d={I.tag} /></span><div><b>Manicure from {aed(from)}</b><span>prices shown upfront</span></div></li>
-          <li><span className="ico"><Ico d={I.shield} /></span><div><b>Sterile tools</b><span>single-use files, autoclave</span></div></li>
+          <li><span className="ico"><Ico d={I.tag} /></span><div><b>{first} from {aed(from)}</b><span>prices shown upfront</span></div></li>
+          <li><span className="ico"><Ico d={I.shield} /></span><div><b>Sterile tools</b><span>{barber ? 'fresh blade for every client' : 'single-use files, autoclave'}</span></div></li>
         </ul>
 
         <section className="book-sec" aria-label="Booking">
-          <Head pill="Online booking" title="Book your appointment" sub="Choose services, a master and a free time. You get a confirmation on WhatsApp." />
+          <Head pill="Online booking" title="Book your appointment" sub={`Choose services, a ${barber ? 'barber' : 'master'} and a free time. You get a confirmation on WhatsApp.`} />
           {db && <Booking t={t} db={db} pick={pick} setPick={setPick} master={master} setMaster={setMaster} />}
         </section>
 
         <section className="sec" id="team">
-          <Head pill="Team" title={t.masters.length > 1 ? 'Our masters' : 'Your master'} sub={t.masters.length > 1 ? 'Pick your favourite master or let us choose the first one free.' : `Every set is done personally by ${t.masters[0].name}.`} />
+          <Head pill="Team" title={barber ? 'Our barbers' : t.masters.length > 1 ? 'Our masters' : 'Your master'} sub={t.masters.length > 1 ? `Pick your favourite ${barber ? 'barber' : 'master'} or let us choose the first one free.` : `Every set is done personally by ${t.masters[0].name}.`} />
           <div className="team">
             {t.masters.map((m) => (
               <button key={m.id} type="button" className="card master" onClick={() => { setMaster(m.id); toBook() }}>
@@ -213,7 +240,7 @@ export default function App() {
 
       <footer className="foot wrap">
         <span>© {new Date().getFullYear()} {t.name}</span>
-        <span className="mut">Nails and beauty in {t.area}, Dubai · <button type="button" className="ck-link" onClick={openCookieSettings}>Cookie settings</button></span>
+        <span className="mut">{barber ? 'Barbershop' : 'Nails and beauty'} in {t.area}, Dubai · <button type="button" className="ck-link" onClick={openCookieSettings}>Cookie settings</button></span>
       </footer>
       <Cookies trackers={trackers} />
     </>

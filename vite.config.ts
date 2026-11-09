@@ -3,12 +3,13 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // Writes a static index.html for every tenant so each demo works on any host without rewrites:
-// Astana equipment rental at dist/s/<slug>/, Dubai car rental at dist/rent/<slug>/.
+// Astana equipment rental at dist/s/<slug>/, Dubai car rental at dist/rent/<slug>/, salons at dist/nails/ and dist/barber/.
 function tenantPages(): Plugin {
   const sets = [
     { data: 'src/data.ts', html: 'dist/index.html', out: 'dist/s', title: (n: string) => `${n}: аренда спецтехники в Астане` },
     { data: 'src/rent/data.ts', html: 'dist/rent/index.html', out: 'dist/rent', title: (n: string) => `${n}: car rental in Dubai` },
     { data: 'src/nails/data.ts', html: 'dist/nails/index.html', out: 'dist/nails', title: (n: string) => `${n}: nails and beauty in Dubai` },
+    { data: 'src/nails/barbers.ts', html: 'dist/barber/index.html', out: 'dist/barber', title: (n: string) => `${n}: barbershop in Dubai` },
   ]
   return {
     name: 'tenant-pages',
@@ -32,5 +33,5 @@ function tenantPages(): Plugin {
 export default defineConfig({
   base: '/',
   plugins: [react(), tenantPages()],
-  build: { rollupOptions: { input: { main: 'index.html', rent: 'rent/index.html', nails: 'nails/index.html' } } },
+  build: { rollupOptions: { input: { main: 'index.html', rent: 'rent/index.html', nails: 'nails/index.html', barber: 'barber/index.html' } } },
 })

@@ -27,6 +27,7 @@ export function Auth({ t }: { t: Tenant }) {
   const pending = useMemo(() => { try { return !!sessionStorage.getItem(PENDING) } catch { return false } }, [])
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
   const owner = ownerLogin(t)
+  const client = t.kind === 'barber' ? 'ahmed@example.com' : 'anna@example.com'
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setErr(''); setBusy(true)
     try {
@@ -57,7 +58,7 @@ export function Auth({ t }: { t: Tenant }) {
         <div className="demo-hint">
           <b>Demo accounts</b>
           <button type="button" onClick={() => { setMode('in'); setF({ ...f, email: owner.email, pass: owner.pass }) }}>Owner: {owner.email}</button>
-          <button type="button" onClick={() => { setMode('in'); setF({ ...f, email: 'anna@example.com', pass: 'demo1234' }) }}>Client: anna@example.com</button>
+          <button type="button" onClick={() => { setMode('in'); setF({ ...f, email: client, pass: 'demo1234' }) }}>Client: {client}</button>
           <span>Password for both: demo1234</span>
         </div>
       </form>
@@ -204,7 +205,7 @@ function Overview({ t, db, go }: { t: Tenant; db: DbT; go: (f: Status | 'all') =
   const tiles: [string, string | number, string, Status | 'all'][] = [
     ['New bookings', fresh.length, 'waiting for confirmation', 'new'],
     ['Today', todays.length, `${aed(todays.reduce((s, x) => s + x.price, 0))} expected`, 'all'],
-    ['Masters busy today', `${load}%`, 'of working hours booked', 'all'],
+    ['Team busy today', `${load}%`, 'of working hours booked', 'all'],
     ['Next 7 days', aed(week.reduce((s, x) => s + x.price, 0)), `${week.length} appointments`, 'confirmed'],
   ]
   const who = (id: string) => db.users.find((u) => u.id === id)
@@ -256,7 +257,7 @@ function Schedule({ t, db }: { t: Tenant; db: DbT }) {
             <div className="sch-col" key={m.id}>
               {hours.map((h) => <i key={h} style={{ top: (h - t.open) * 60 * PX }} />)}
               {list.filter((x) => x.masterId === m.id).map((x) => (
-                <button key={x.id} type="button" className={`blk n-${x.status}${sel === x.id ? ' on' : ''}`}
+                <button key={x.id} type="button" className={`blk n-${x.status}${sel === x.id ? ' on' : ''}${x.mins < 40 ? ' short' : ''}`}
                   style={{ top: (x.start - t.open * 60) * PX, height: Math.max(x.mins * PX - 3, 22) }} onClick={() => setSel(x.id)}>
                   <b>{hhmm(x.start)} {db.users.find((u) => u.id === x.userId)?.name.split(' ')[0]}</b>
                   <span>{x.title}</span>
