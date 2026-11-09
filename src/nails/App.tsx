@@ -114,26 +114,6 @@ function Booking({ t, db, pick, setPick, master, setMaster }: {
   )
 }
 
-/** Hero for barbershops until a photo is ready: a straight razor drawn in light. */
-function BarberArt() {
-  return (
-    <svg className="hero-art" viewBox="0 0 600 360" aria-hidden="true">
-      <defs>
-        <linearGradient id="ba-blade" x1="0" x2="1"><stop offset="0" stopColor="#fff" stopOpacity=".9" /><stop offset=".6" stopColor="#cfd3d6" stopOpacity=".55" /><stop offset="1" stopColor="#7b8287" stopOpacity=".25" /></linearGradient>
-        <linearGradient id="ba-handle" x1="0" x2="1"><stop offset="0" stopColor="var(--rose2)" /><stop offset="1" stopColor="var(--rose)" /></linearGradient>
-        <radialGradient id="ba-glow"><stop offset="0" stopColor="var(--rose)" stopOpacity=".35" /><stop offset="1" stopColor="var(--rose)" stopOpacity="0" /></radialGradient>
-      </defs>
-      <ellipse cx="300" cy="190" rx="260" ry="120" fill="url(#ba-glow)" />
-      <g transform="rotate(-14 300 180)">
-        <path d="M70 168 L330 150 Q352 149 356 166 L360 190 Q362 204 346 205 L84 214 Q62 212 60 192 Z" fill="url(#ba-blade)" />
-        <path d="M84 214 L346 205" stroke="#fff" strokeOpacity=".9" strokeWidth="1.5" />
-        <circle cx="356" cy="182" r="9" fill="#111" stroke="#bbb" strokeWidth="2" />
-        <path d="M356 182 Q420 150 540 160 Q566 164 560 182 Q556 196 530 196 Q430 196 356 182 Z" fill="url(#ba-handle)" />
-      </g>
-    </svg>
-  )
-}
-
 export default function App() {
   const t = tenantFromPath(location.pathname)
   const db = useDb()
@@ -185,7 +165,8 @@ export default function App() {
           <p className="lead">{t.lead}</p>
           <a className="connect" href="#book">Book online <Arrow /></a>
           <div className="stage n-stage" aria-hidden="true">
-            {barber ? <BarberArt /> : <img className="hero-photo" src="/nails/hero-smoky.webp" srcSet="/nails/hero-smoky-sm.webp 480w, /nails/hero-smoky.webp 840w"
+            {barber ? <img className="hero-photo hp-barber" src="/barber/hero-fade.webp" srcSet="/barber/hero-fade-sm.webp 480w, /barber/hero-fade.webp 840w"
+              sizes="(max-width: 640px) 80vw, 520px" width={840} height={1050} alt="" /> : <img className="hero-photo" src="/nails/hero-smoky.webp" srcSet="/nails/hero-smoky-sm.webp 480w, /nails/hero-smoky.webp 840w"
               sizes="(max-width: 640px) 80vw, 520px" width={840} height={941} alt="" />}
           </div>
         </section>}

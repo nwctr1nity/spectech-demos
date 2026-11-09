@@ -114,7 +114,11 @@
   .svc-meta { grid-column: 2; justify-items: start; display: flex; gap: 10px; align-items: baseline }
 }
 
-/* Barbershops: same layout, brass accent, drawn razor until a photo is ready */
+/* Barbershops: same layout, brass accent, studio photo faded on every side */
 :root[data-kind='barber'] { --rose: #d9bb8c; --rose2: #a8834f }
-.hero-art { display: block; width: min(560px, 86vw); height: auto; margin-top: clamp(10px, 3vw, 40px); animation: hp-in 1.2s var(--ease) both }
+.hp-barber {
+  width: min(500px, 78vw);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 16%, #000 80%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 40%, rgba(0, 0, 0, 0.9) 50%, rgba(0, 0, 0, 0.72) 60%, rgba(0, 0, 0, 0.5) 70%, rgba(0, 0, 0, 0.28) 80%, rgba(0, 0, 0, 0.1) 90%, transparent 99%);
+  mask-image: linear-gradient(to right, transparent, #000 16%, #000 80%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 40%, rgba(0, 0, 0, 0.9) 50%, rgba(0, 0, 0, 0.72) 60%, rgba(0, 0, 0, 0.5) 70%, rgba(0, 0, 0, 0.28) 80%, rgba(0, 0, 0, 0.1) 90%, transparent 99%);
+}
 .blk.short { grid-auto-flow: column; justify-content: start; gap: 6px; padding: 3px 9px; align-content: center }
