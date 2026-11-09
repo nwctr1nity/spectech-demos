@@ -73,7 +73,7 @@ export const TENANTS: Tenant[] = [
     address: 'Azizi Riviera 20, Al Merkadh, Meydan, Dubai', ...ph('+971 50 126 8080'),
     open: 9, close: 21, hours: 'Daily 9 am – 9 pm', rating: { value: '4.8', count: 99 },
     review: { text: 'One of the nicest and cleanest nail services I’ve experienced in Dubai.', author: 'Google review' },
-    headline: 'Russian manicure, done right', lead: 'Russian-speaking nail masters in Azizi Riviera. Pick a service and a free time, the confirmation comes on WhatsApp.',
+    headline: 'Clean lines, perfect shine', lead: 'Manicure, pedicure and extensions in Azizi Riviera, Meydan. Pick a service and a free time, the confirmation comes on WhatsApp.',
     masters: [
       { id: 'm1', name: 'Kristina', role: 'Owner, nail master', langs: 'EN · RU' },
       { id: 'm2', name: 'Dilnoza', role: 'Nail master', langs: 'EN · RU' },
