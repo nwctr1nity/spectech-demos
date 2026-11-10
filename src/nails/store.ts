@@ -3,7 +3,7 @@
 // booking, the client account and the owner panel without a server. Async-free and
 // API-shaped so it can be swapped for a real backend (Supabase) on sale.
 import { useSyncExternalStore } from 'react'
-import { SERVICES, type Service, type Tenant } from './data'
+import { SERVICES, hoursOn, isClosed, type Service, type Tenant } from './data'
 
 export type Role = 'guest' | 'owner'
 export type User = { id: string; role: Role; name: string; email: string; phone: string; pass: string; created: string }
@@ -11,6 +11,8 @@ export type Status = 'new' | 'confirmed' | 'done' | 'noshow' | 'cancelled'
 export type Appt = {
   id: string; no: number; userId: string; services: string[]; title: string; masterId: string
   date: string; start: number; mins: number; price: number; status: Status; created: string; note?: string
+  /** garages: the client's car, make, model and year */
+  car?: string
 }
 export type PriceItem = { id: string; price: number; mins: number; available: boolean }
 type Db = { v: 1; users: User[]; appts: Appt[]; prices: PriceItem[]; session?: string; seq: number }
@@ -37,7 +39,7 @@ export const ownerLogin = (t: Tenant) => ({ email: `owner@${t.slug}.demo`, pass:
 async function seed(t: Tenant): Promise<Db> {
   const o = ownerLogin(t)
   const now = new Date().toISOString()
-  const guests: [string, string, string][] = t.kind === 'barber' ? [
+  const guests: [string, string, string][] = t.kind === 'barber' || t.kind === 'garage' ? [
     ['Ahmed Saeed', 'ahmed@example.com', '+971 50 000 0101'], ['James Miller', 'james@example.com', '+971 50 000 0102'],
     ['Arjun Nair', 'arjun@example.com', '+971 50 000 0103'], ['Omar Khalil', 'omar@example.com', '+971 50 000 0104'],
     ['Daniyar Seitkali', 'daniyar@example.com', '+971 50 000 0105'],
@@ -72,17 +74,27 @@ async function seed(t: Tenant): Promise<Db> {
     'mani-gel': 'cut-fade', 'mani-pedi': 'cut-beard', 'lash-volume': 'facial', 'mani-russian': 'cut-classic', 'ext-gel': 'hair-color',
     'mani-french': 'cut-fade', 'pedi-gel': 'beard-trim', brows: 'hot-towel', remove: 'beard-trim', 'pedi-classic': 'head-shave', 'lash-lift': 'hair-spa',
   }
+  // garages: the same week again, with car jobs, and each client's car
+  const GARAGE: Record<string, string> = {
+    'mani-gel': 'oil-basic', 'mani-pedi': 'minor', 'lash-volume': 'ac-check', 'mani-russian': 'brake-front', 'ext-gel': 'major',
+    'mani-french': 'diag', 'pedi-gel': 'suspension', brows: 'battery', remove: 'tyre-fit', 'pedi-classic': 'inspect', 'lash-lift': 'electrics',
+  }
+  const CARS = ['Toyota Camry 2019', 'Nissan Patrol 2021', 'Mitsubishi Pajero 2017', 'Honda Accord 2020', 'Kia Sportage 2022']
   if (t.kind === 'barber') for (const p of plan) p[1] = p[1].map((id) => BARBER[id] ?? id)
+  if (t.kind === 'garage') for (const p of plan) p[1] = p[1].map((id) => GARAGE[id] ?? id)
   const appts: Appt[] = []
   for (const [g, ids, mi, off, h, status] of plan) {
     if (!ids.every((id) => t.services.includes(id))) continue
     const ss = ids.map((id) => SERVICES.find((s) => s.id === id)!)
+    let date = addDays(d0, off)
+    while (isClosed(t, date)) date = addDays(date, off < 0 ? -1 : 1)
     const a: Appt = {
       id: uid(), no: 501 + appts.length, userId: `g${g}`, services: ids, title: ss.map((s) => s.name).join(' + '), masterId: m[mi % m.length],
-      date: addDays(d0, off), start: h * 60, mins: ss.reduce((x, s) => x + s.mins, 0), price: ss.reduce((x, s) => x + s.price, 0),
-      status, created: now,
+      date, start: h * 60, mins: ss.reduce((x, s) => x + s.mins, 0), price: ss.reduce((x, s) => x + s.price, 0),
+      status, created: now, ...(t.kind === 'garage' ? { car: CARS[g] } : {}),
     }
-    if (a.start + a.mins > t.close * 60) continue
+    const [o, c] = hoursOn(t, date)
+    if (a.start < o * 60 || a.start + a.mins > c * 60) continue
     if (appts.some((b) => b.masterId === a.masterId && b.date === a.date && a.start < b.start + b.mins && b.start < a.start + a.mins)) continue
     appts.push(a)
   }
@@ -145,10 +157,12 @@ const busy = (d: Db, date: string, masterId: string, start: number, mins: number
 
 /** Start times (minutes from midnight) where the master (or any master) is free for `mins`. */
 export function freeSlots(t: Tenant, d: Db, date: string, masterId: string | 'any', mins: number) {
+  if (isClosed(t, date)) return []
   const masters = masterId === 'any' ? t.masters.map((m) => m.id) : [masterId]
   const nowMin = date === today() ? new Date().getHours() * 60 + new Date().getMinutes() + 30 : -1
   const out: { start: number; master: string }[] = []
-  for (let s = t.open * 60; s + mins <= t.close * 60; s += SLOT) {
+  const [o, c] = hoursOn(t, date)
+  for (let s = o * 60; s + mins <= c * 60; s += SLOT) {
     if (s < nowMin) continue
     const m = masters.find((id) => !busy(d, date, id, s, mins))
     if (m) out.push({ start: s, master: m })

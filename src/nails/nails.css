@@ -116,6 +116,8 @@
 
 /* Barbershops: same layout, brass accent, studio photo faded on every side */
 :root[data-kind='barber'] { --rose: #d9bb8c; --rose2: #a8834f }
+/* Garages: warm amber accent to match the workshop light in the photo */
+:root[data-kind='garage'] { --rose: #eaa765; --rose2: #b9732f }
 .hp-barber {
   width: min(500px, 78vw);
   -webkit-mask-image: linear-gradient(to right, transparent, #000 16%, #000 80%, transparent), linear-gradient(to bottom, transparent, #000 14%, #000 40%, rgba(0, 0, 0, 0.9) 50%, rgba(0, 0, 0, 0.72) 60%, rgba(0, 0, 0, 0.5) 70%, rgba(0, 0, 0, 0.28) 80%, rgba(0, 0, 0, 0.1) 90%, transparent 99%);

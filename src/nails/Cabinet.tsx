@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Select } from '../Select'
 import { Arrow, I, Ico } from '../rent/ui'
-import { CATS, aed, dur, hhmm, wa, type Tenant } from './data'
+import { WORDS, catsOf, aed, dur, hhmm, kindOf, wa, type Tenant } from './data'
 import {
   AuthError, STATUS, addDays, createAppt, fmtDay, livePrices, me, ownerLogin, resetDemo, setNote, setStatus, signIn, signOut, signUp,
   today, updatePrice, updateProfile, type Appt, type DbT, type Status,
@@ -27,7 +27,7 @@ export function Auth({ t }: { t: Tenant }) {
   const pending = useMemo(() => { try { return !!sessionStorage.getItem(PENDING) } catch { return false } }, [])
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value })
   const owner = ownerLogin(t)
-  const client = t.kind === 'barber' ? 'ahmed@example.com' : 'anna@example.com'
+  const client = WORDS[kindOf(t)].client
   const submit = async (e: FormEvent) => {
     e.preventDefault(); setErr(''); setBusy(true)
     try {
@@ -101,7 +101,7 @@ export function Account({ t, db }: { t: Tenant; db: DbT }) {
       <div className="req-body">
         <div className="req-top"><span className="mut small">#{a.no} · {hhmm(a.start)}–{hhmm(a.start + a.mins)}</span><Badge s={a.status} /></div>
         <h3>{a.title}</h3>
-        <p className="mut small">with {master(a.masterId)} · {dur(a.mins)} · {aed(a.price)}</p>
+        <p className="mut small">{a.car && `${a.car} · `}with {master(a.masterId)} · {dur(a.mins)} · {aed(a.price)}</p>
         <div className="req-act">
           <a className="btn btn-line" href={wa(t.whatsapp, `Hello! About my appointment #${a.no} on ${when(a)}.`)} target="_blank" rel="noopener">WhatsApp us</a>
           {(a.status === 'new' || a.status === 'confirmed') && a.date >= today() && <button type="button" className="btn btn-line danger" onClick={() => setStatus(a.id, 'cancelled')}>Cancel</button>}
@@ -218,7 +218,7 @@ function Overview({ t, db, go }: { t: Tenant; db: DbT; go: (f: Status | 'all') =
         <h2 className="cab-h">Needs confirmation</h2>
         {fresh.length === 0 ? <p className="mut">All bookings confirmed.</p> : fresh.map((x) => (
           <div className="line" key={x.id}>
-            <div><b>#{x.no} · {x.title}</b><span className="mut small">{who(x.userId)?.name} · {when(x)} · {t.masters.find((m) => m.id === x.masterId)?.name} · {aed(x.price)}</span></div>
+            <div><b>#{x.no} · {x.title}</b><span className="mut small">{who(x.userId)?.name}{x.car && ` · ${x.car}`} · {when(x)} · {t.masters.find((m) => m.id === x.masterId)?.name} · {aed(x.price)}</span></div>
             <div className="line-act">
               <button type="button" className="btn btn-light sm" onClick={() => setStatus(x.id, 'confirmed')}>Confirm</button>
               <button type="button" className="btn btn-line sm" onClick={() => setStatus(x.id, 'cancelled')}>Decline</button>
@@ -271,7 +271,7 @@ function Schedule({ t, db }: { t: Tenant; db: DbT }) {
         <div className="panel sched-detail" role="region" aria-label="Appointment details">
           <div className="req-top"><span className="mut small">#{a.no} · {when(a)}</span><Badge s={a.status} /></div>
           <h3>{a.title}</h3>
-          <p className="small">{client.name} · {client.phone} · {aed(a.price)}</p>
+          <p className="small">{client.name} · {client.phone}{a.car && ` · ${a.car}`} · {aed(a.price)}</p>
           <div className="sd-act">
             <Select id={`sd-${a.id}`} value={a.status} onChange={(v) => setStatus(a.id, v as Status)} options={ORDER.map((s) => ({ value: s, label: STATUS[s] }))} />
             <a className="btn btn-light sm" target="_blank" rel="noopener" href={wa(phoneDigits(client.phone), `Hello ${client.name.split(' ')[0]}! This is ${t.name} about your appointment on ${when(a)}.`)}>WhatsApp client <Arrow /></a>
@@ -288,7 +288,7 @@ function Bookings({ t, db, filter, setFilter }: { t: Tenant; db: DbT; filter: St
   const list = db.appts.filter((a) => {
     if (filter !== 'all' && a.status !== filter) return false
     const g = db.users.find((u) => u.id === a.userId)
-    return !q.trim() || `${a.no} ${a.title} ${g?.name} ${g?.phone} ${g?.email}`.toLowerCase().includes(q.trim().toLowerCase())
+    return !q.trim() || `${a.no} ${a.title} ${a.car ?? ''} ${g?.name} ${g?.phone} ${g?.email}`.toLowerCase().includes(q.trim().toLowerCase())
   }).sort((a, b) => (b.date + hhmm(b.start)).localeCompare(a.date + hhmm(a.start)))
   return (
     <section>
@@ -312,8 +312,8 @@ function Bookings({ t, db, filter, setFilter }: { t: Tenant; db: DbT; filter: St
               <div className="adm-main">
                 <div className="req-top"><span className="mut small">#{a.no} · {hhmm(a.start)}–{hhmm(a.start + a.mins)}</span><Badge s={a.status} /></div>
                 <h3>{a.title}</h3>
-                <p className="small">with {t.masters.find((m) => m.id === a.masterId)?.name} · {dur(a.mins)} · <b>{aed(a.price)}</b></p>
-                <input className="field note" placeholder="Private note, e.g. allergy or colour" aria-label={`Note for #${a.no}`} defaultValue={a.note} onBlur={(e) => setNote(a.id, e.target.value)} />
+                <p className="small">{a.car && <>{a.car} · </>}with {t.masters.find((m) => m.id === a.masterId)?.name} · {dur(a.mins)} · <b>{aed(a.price)}</b></p>
+                <input className="field note" placeholder={kindOf(t) === 'garage' ? 'Private note, e.g. plate number or parts to order' : 'Private note, e.g. allergy or colour'} aria-label={`Note for #${a.no}`} defaultValue={a.note} onBlur={(e) => setNote(a.id, e.target.value)} />
               </div>
               <div className="adm-side">
                 <div className="who"><b>{g?.name}</b><span className="mut small">{g?.phone}</span><span className="mut small">{g?.email}</span></div>
@@ -335,7 +335,7 @@ function Prices({ t, db }: { t: Tenant; db: DbT }) {
     <section className="panel fleet-tbl">
       <h2 className="cab-h">Services & prices</h2>
       <p className="mut small">Changes show on the website and in online booking right away.</p>
-      {CATS.map((c) => items.some((s) => s.cat === c) && (
+      {catsOf(t).map((c) => items.some((s) => s.cat === c) && (
         <div key={c} className="pr-group">
           <h3 className="pr-cat">{c}</h3>
           {items.filter((s) => s.cat === c).map((s) => (
